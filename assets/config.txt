@@ -1,0 +1,6 @@
+"Raspberry Pi Digital Message Repeater"
+1,spookyness,assets/test1.wav
+2,spookier,assets/test2.wav,assets/untitled.ogg,assets/1.ogg,assets/2.ogg,assets/broken.wav
+3,one,assets/1.ogg
+4,two,assets/2.ogg
+5,doesn't exist,nowav.wav
