@@ -1,0 +1,4 @@
+[Desktop Entry]
+Type=Application
+Name=startup
+Exec=/home/pi/raspi_soundboard/startup.sh

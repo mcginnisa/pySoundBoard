@@ -27,3 +27,10 @@
 
 
 - the reset button will reset all the multiple-sound-file-per-square states
+
+
+- The setup and autostart files are written for a default minimal raspberry pi OS image, with the
+    * default username 'pi'. setup.sh must be run as root ('sudo setup.sh')
+
+ - The startup script which starts up the python file waits for 120 seconds for the desktop to come up. If you sleep for too short at time, the soundboard gui will never come up. If you sleep
+ for too long, access to the desktop will be possible with a restart. I will let you tune this number
