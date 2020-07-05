@@ -1,40 +1,27 @@
 
-
-
 import pygame
 from pygame.locals import *
 import sys
 import os
-import subprocess
-import xlrd
 
 
 
-
-
-#==========Configuration=============
+# variables
 #increase this number to make the legend font bigger
 fontmultipler = 1.5
-size = [800, 480]
-rows = 4  # 10 max
-columns = 8
-spacing_rows = int(size[0]/(1+2*rows))
-spacing_columns = int(size[1]/(1+2*columns))
-text_spacing = spacing_columns
+size = [480, 480]
+rows = 6  # 10 max
+spacing = int(size[0]/(1+2*rows))
 fadein = 1000
 fadeout = 3000
-offset12 = spacing_columns + 12
+offset12 = spacing + 12
 leftB = 1
 rightB = 3
 asset_folder_name = 'assets'
-config_file_name = 'config_excel.xlsx'
-#to read from excel file, the config file must have xls somewhere in it, ...
-# ...or you can force excel mode by setting excel mode = 1. Otherwise, will use text mode if supplied text file
-excel_mode = 0 #to FORCE excel file mode, set this to 1, only use if excel file isnt working
-
+config_file_name = 'config.txt'
 #this font must be included in asset folder!
 font_name = 'IBMPlexMono-Medium.otf'
-exit_shuts_down = 1 #turn this off for debugging purposes
+
 
 
 # colors
@@ -54,17 +41,13 @@ dark = (30, 30, 30)
 grey = (150, 150, 150)
 grey2 = (20, 20, 20)
 
-#comment these two lines out to get standard output back from pygame
-# sys.stdout = os.devnull
-# sys.stderr = os.devnull
-
 # initialize game engine
 pygame.mixer.pre_init(44100, -16, 1, 512)  # fixes delay in play
 pygame.init()
 # global banner
 
 # init channels
-pygame.mixer.set_num_channels(rows*columns)
+pygame.mixer.set_num_channels(rows**2)
 
 # set screen width/height and caption
 screen = pygame.display.set_mode(size, pygame.NOFRAME)
@@ -80,162 +63,131 @@ def resource_path(relative_path):
 	dir = split_path[0]
 	file = split_path[1]
 	#relative_path = os.path.join(os.getcwd(),dir, file)
-
+	'''
+	try:
+	# PyInstaller creates a temp folder and stores path in _MEIPASS
+		base_path = os.path.join(sys._MEIPASS,
+	except Exception:
+		base_path = os.path.abspath(".")
+		'''
+	'''
+	split_path = relative_path.split('/')
+	dir = split_path[0]
+	file = split_path[1]
+	'''
 	return os.path.join(os.getcwd(),dir, file)
 
-
+# def readpaths():
+#     '''read rows**2 lines from paths.txt file
+#     and create a list of paths'''
+#     paths = []
+#     with open("paths.txt") as myfile:
+#         paths = [next(myfile) for x in range(rows**2)]
+#     # remove white space
+#     paths = [line.rstrip('\n') for line in paths]
+#     return paths
 
 def readpaths2():
-
-	if config_file_name.find('.xls'):
-		return read_paths_excel()
-	if excel_mode:
-		return read_paths_excel()
     # global banner
-    #read rows*columns lines from paths.txt file and create a list of paths
+    '''read rows**2 lines from paths.txt file
+    and create a list of paths'''
     # lines = []
-	sound_data = []
+    sound_data = []
     # data[i]['flag'] == 'US'
-	asset_url = resource_path(asset_folder_name + '/' + config_file_name)
-	with open(asset_url) as file_object:
-		lines = file_object.read().splitlines()
+    asset_url = resource_path(asset_folder_name + '/' + config_file_name)
+    with open(asset_url) as file_object:
+        lines = file_object.read().splitlines()
     # lines = [line.rstrip('\n') for line in lines]
 
     #trucate list if it is too big
     # banner = lines[0]
-	lines = lines[1:rows*columns-1]
+    lines = lines[1:rows**2-1]
 
-	i = 0
-	for line in lines:
-	    line = line.rstrip('\n')
-	    entries = line.split(',')
-	    thisdict =	{
-			"index": entries[0],
-			"title": entries[1],
-			"paths": line.split(',')[2:len(entries)]
+    i = 0
+    for line in lines:
+        line = line.rstrip('\n')
+        entries = line.split(',')
+        thisdict =	{
+					  "index": entries[0],
+					  "title": entries[1],
+					  "paths": line.split(',')[2:len(entries)]
 					}
-	    sound_data.append(thisdict)
-	    i = i+1
-	# add extra dummy rows if not enough sound files were added
-	if i < rows*columns-1:
-	    for j in range(rows*columns-i):
-	        thisdict =	{
-				"index": i + 1,
-				"title": '',
-				"paths": ['']
-	                    }
-	        sound_data.append(thisdict)
-	        i = i + 1
-	return sound_data
-
-def read_paths_excel():
-	# global banner
-	#read rows and columns from excel file
-	# lines = []
-	sound_data = []
-	# data[i]['flag'] == 'US'
-	asset_url = resource_path(asset_folder_name + '/' + config_file_name)
-	# with open(asset_url) as file_object:
-	#     lines = file_object.read().splitlines()
-
-	# Give the location of the file
-	# loc = ("path of file")
-
-	# To open Workbook
-	wb = xlrd.open_workbook(asset_url)
-	sheet = wb.sheet_by_index(0)
-
-	# i = 0
-	for i in range(sheet.nrows):
-		#skip first entry, it is the banner string
-		if i == 0:
-			banner = sheet.row_values(i)[0]
-			continue
-		# for j in range(sheet)
-		thisdict =	{
-			"banner": banner,
-			"index": sheet.row_values(i)[0],
-			"title": sheet.row_values(i)[1],
-			"paths": sheet.row_values(i)[2:len(sheet.row_values(i))]
-					}
-		sound_data.append(thisdict)
-		if i == range(sheet.nrows)[-1]:
-			j = i - 1
-
-	# the first entry of the sound data list will be empty because of the banner string
-	# so we will rotate the list to the left and delete the last entry
-	rotate_list(sound_data)
-	sound_data.pop()
-	# print(sound_data)
-	# lines = lines[1:rows*columns-1]
-
-
+        sound_data.append(thisdict)
+        i = i+1
     # add extra dummy rows if not enough sound files were added
-	if j < rows*columns-1:
-	    for k in range(rows*columns-j):
-	        thisdict =	{
-				# "banner": banner,
-				"index": j + 1,
-				"title": '',
-				"paths": ['']
-	                    }
-	        sound_data.append(thisdict)
-	        j = j + 1
-
-	# print(sound_data)
-
-	# For row 0 and column 0
-	# print(sheet.cell_value(0, 0))
-	return sound_data
+    if i < rows**2-1:
+        for j in range(rows**2-i):
+            thisdict =	{
+                          "index": i + 1,
+                          "title": 'empty',
+                          "paths": ['empty']
+                        }
+            sound_data.append(thisdict)
+            i = i + 1
+    return sound_data
 
 
 def makebuttons():
-    #generate sound button objects according to the number ofrows
+    '''generate sound button objects according to the number of
+    rows'''
     data = []
     n = 0
-    for j in range(columns):
+    for j in range(rows):
         for i in range(rows):
             data.append({
-				# 'banner': sound_data[0]['banner'],
                 'index': n+1,
                 'soundchannel': pygame.mixer.Channel(n),
                 # 'soundobj': pygame.mixer.Sound(sound_data[n]['paths']),
-                'coord': (spacing_rows*(2*i+1), spacing_columns*(2*j+1)),
-                'size': (spacing_rows, spacing_columns),
+                'coord': (spacing*(2*i+1), spacing*(2*j+1)),
+                'size': (spacing, spacing),
                 'paths': sound_data[n]['paths'],
-                'rectobj': pygame.Rect(spacing_rows*(2*i+1), spacing_columns*(2*j+1), spacing_rows, spacing_columns),
+                'rectobj': pygame.Rect(spacing*(2*i+1), spacing*(2*j+1), spacing, spacing),
                 'textobj': fontObj.render(str(n+1), False, black),
                 'textname': sound_data[n]['title'],
                 'filename': sound_data[n]['paths'],
-                'textcoords': (int(spacing_rows*(2*i+1.3)), int(spacing_columns*(2*j+1.3))),
-                'namecoords': (int(spacing_rows*(2*i+1)), int(spacing_columns*(2*j+2.2))),
-                'filecoords': (spacing_rows*(2*i+1), spacing_columns*(2*j+2.6)),
+                'textcoords': (spacing*(2*i+1.3), spacing*(2*j+1.3)),
+                'namecoords': (spacing*(2*i+1), spacing*(2*j+2.2)),
+                'filecoords': (spacing*(2*i+1), spacing*(2*j+2.6)),
                 'color': grey,
                 'loop': False,
                 'cur_play': sound_data[n]['paths'][0],
                 'no_file': 0
             })
             n += 1
-    data[rows*columns-2]['textname'] = ''
-    data[rows*columns-2]['paths'] = ['']
-    data[rows*columns-2]['textobj'] = fontObj.render('RESET', False, white)
-    data[rows*columns-1]['textname'] = ''
-    data[rows*columns-1]['paths'] = ['']
-    data[rows*columns-1]['textobj'] = fontObj.render('EXIT', False, white)
+    data[rows**2-2]['textname'] = 'RESET'
+    data[rows**2-2]['paths'] = ['']
+    data[rows**2-2]['textobj'] = fontnames.render('', True, red)
+    data[rows**2-1]['textname'] = 'EXIT'
+    data[rows**2-1]['paths'] = ['']
+    data[rows**2-1]['textobj'] = fontnames.render('', True, red)
+
+        # 'soundchannel': pygame.mixer.Channel(n),
+        # # 'soundobj': pygame.mixer.Sound(sound_data[n]['paths']),
+        # 'coord': (spacing*(2*i+1), spacing*(2*j+1)),
+        # 'size': (spacing, spacing),
+        # 'paths': 'empty',
+        # 'rectobj': pygame.Rect(spacing*(2*i+1), spacing*(2*j+1), spacing, spacing),
+        # 'textobj': fontObj.render(str(n+1), False, black),
+        # 'textname': fontnames.render('STOP', True, red),
+        # 'filename': fontnames.render('', True, red),
+        # 'textcoords': (spacing*(2*i+1.3), spacing*(2*j+1.3)),
+        # 'namecoords': (spacing*(2*i+1), spacing*(2*j+2.2)),
+        # 'filecoords': (spacing*(2*i+1), spacing*(2*j+2.6)),
+        # 'color': red,
+        # 'loop': False
 
     return data
 
 
-def makelogo(sound_data):
+def makelogo():
     # draw logo according to the size of the buttons
-    # asset_url = resource_path(asset_folder_name + '/' + config_file_name)
-    # with open(asset_url) as file_object:
-    # lines = file_object.read().splitlines()
-    # banner = lines[0]
-    banner = sound_data[0]['banner']
+    asset_url = resource_path(asset_folder_name + '/' + config_file_name)
+    with open(asset_url) as file_object:
+        lines = file_object.read().splitlines()
+    banner = lines[0]
     logo = fontLogo.render(banner, True, white)
     logoRect = logo.get_rect()
-    logoRect.midright = (int(text_spacing*(2*rows)), int(text_spacing/2))
+    logoRect.midright = (spacing*(2*rows), spacing/2)
     return (logo, logoRect)
 
 # def rotate_list(list):
@@ -261,10 +213,10 @@ def rotate_list(list, num=1):
 #font = pygame.font.Sy
 # init fonts
 font = resource_path(asset_folder_name + '/' + font_name)
-fontLogo = pygame.font.Font(font, int(text_spacing/2))
-fontObj = pygame.font.Font(font, int(text_spacing/2.5))
-fontnames = pygame.font.Font(font, int(fontmultipler*text_spacing/5))
-filenames = pygame.font.Font(font, int(fontmultipler*text_spacing/5))
+fontLogo = pygame.font.Font(font, int(spacing/2))
+fontObj = pygame.font.Font(font, int(spacing/2.5))
+fontnames = pygame.font.Font(font, int(fontmultipler*spacing/5))
+filenames = pygame.font.Font(font, int(fontmultipler*spacing/5))
 
 # make the initial set of objects
 # paths = readpaths()
@@ -272,7 +224,7 @@ sound_data = readpaths2()
 # print(len(sound_data))
 data = makebuttons()
 # print(data[rows]['coord'][0])
-logo = makelogo(sound_data)
+logo = makelogo()
 
 # initialize clock. used later in the loop.
 clock = pygame.time.Clock()
@@ -303,14 +255,12 @@ while done == False:
                 elem = data[i]
                 if elem['rectobj'].collidepoint(pos):
                     pygame.mixer.stop()
-                    if elem['index'] == rows*columns: #exit
-                        if exit_shuts_down:
-                        	subprocess.Popen(['shutdown','-h','now'])
+                    if elem['textname'] == 'EXIT':
                         exit()
-                    if elem['index'] == rows*columns-1: #reset
+                    if elem['textname'] == 'RESET':
                         sound_data = readpaths2()
                         data = makebuttons()
-                        logo = makelogo(sound_data)
+                        logo = makelogo()
                     try:
                         # Sound = pygame.mixer.Sound(elem['paths'])
                         asset_path = resource_path(asset_folder_name + '/' + elem['paths'][0])
@@ -326,8 +276,8 @@ while done == False:
                     except:
                         elem['no_file'] = 1
                         pass
-                    # pygame.draw.rect(screen, red, (elem['coord'][0]-6,
-                                                   # elem['coord'][1]-6, elem['rectobj'].midright, elem['rectobj'].midtop), 5)
+                    pygame.draw.rect(screen, red, (elem['coord'][0]-6,
+                                                   elem['coord'][1]-6, offset12, offset12), 5)
 
     # write game logic here
     pos = pygame.mouse.get_pos()
@@ -338,28 +288,24 @@ while done == False:
         else:
             elem['cur_play'] = elem['paths'][0]
             elem['color'] = white
-        # if elem['rectobj'].collidepoint(pos):
-            # pygame.draw.rect(screen, green, (elem['coord'][0]-6,
-                                              # elem['coord'][1]-6, offset12, offset12), 1)
-        if elem['index'] == rows*columns-1: #RESET
+        if elem['rectobj'].collidepoint(pos):
+            pygame.draw.rect(screen, green, (elem['coord'][0]-6,
+                                              elem['coord'][1]-6, offset12, offset12), 1)
+        if elem['textname'] == 'EXIT':
             elem['color'] = red
-        elif elem['index'] == rows*columns: #EXIT
+        if elem['textname'] == 'RESET':
             elem['color'] = red
-        elif elem['no_file']:
+        if elem['no_file']:
             elem['color'] = yellow
     # write draw code here
     screen.blit(logo[0], logo[1])
     # for elem in data:
     for i in range(len(data)):
         elem = data[i]
-		#draw rectangle
         pygame.draw.rect(screen, elem['color'], elem['rectobj'])
-		#Display number on button
         screen.blit(elem['textobj'], elem['textcoords'])
-		#display name from name column
         screen.blit(fontnames.render(elem['textname'], True, white), elem['namecoords'])
-		#display file name
-        # screen.blit(fontnames.render(elem['cur_play'], True, white), elem['filecoords'])
+        screen.blit(fontnames.render(elem['cur_play'], True, white), elem['filecoords'])
 
 
 

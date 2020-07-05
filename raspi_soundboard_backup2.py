@@ -14,7 +14,7 @@ import xlrd
 
 #==========Configuration=============
 #increase this number to make the legend font bigger
-fontmultipler = 1.5
+# fontmultipler = 1.5
 size = [800, 480]
 rows = 4  # 10 max
 columns = 8
@@ -27,14 +27,14 @@ offset12 = spacing_columns + 12
 leftB = 1
 rightB = 3
 asset_folder_name = 'assets'
-config_file_name = 'config_excel.xlsx'
+config_file_name = 'config.txt'
 #to read from excel file, the config file must have xls somewhere in it, ...
 # ...or you can force excel mode by setting excel mode = 1. Otherwise, will use text mode if supplied text file
 excel_mode = 0 #to FORCE excel file mode, set this to 1, only use if excel file isnt working
 
 #this font must be included in asset folder!
 font_name = 'IBMPlexMono-Medium.otf'
-exit_shuts_down = 1 #turn this off for debugging purposes
+exit_shuts_down = 0 #turn this off for debugging purposes
 
 
 # colors
@@ -53,10 +53,6 @@ white = (255, 255, 255)
 dark = (30, 30, 30)
 grey = (150, 150, 150)
 grey2 = (20, 20, 20)
-
-#comment these two lines out to get standard output back from pygame
-# sys.stdout = os.devnull
-# sys.stderr = os.devnull
 
 # initialize game engine
 pygame.mixer.pre_init(44100, -16, 1, 512)  # fixes delay in play
@@ -146,7 +142,7 @@ def read_paths_excel():
 	sheet = wb.sheet_by_index(0)
 
 	# i = 0
-	for i in range(sheet.nrows):
+	for i in range(sheet.nrows()):
 		#skip first entry, it is the banner string
 		if i == 0:
 			banner = sheet.row_values(i)[0]
@@ -159,14 +155,14 @@ def read_paths_excel():
 			"paths": sheet.row_values(i)[2:len(sheet.row_values(i))]
 					}
 		sound_data.append(thisdict)
-		if i == range(sheet.nrows)[-1]:
+		if x == list[-1]:
 			j = i - 1
 
 	# the first entry of the sound data list will be empty because of the banner string
 	# so we will rotate the list to the left and delete the last entry
 	rotate_list(sound_data)
 	sound_data.pop()
-	# print(sound_data)
+	print(sound_data)
 	# lines = lines[1:rows*columns-1]
 
 
@@ -174,7 +170,7 @@ def read_paths_excel():
 	if j < rows*columns-1:
 	    for k in range(rows*columns-j):
 	        thisdict =	{
-				# "banner": banner,
+				"banner": banner,
 				"index": j + 1,
 				"title": '',
 				"paths": ['']
@@ -182,7 +178,7 @@ def read_paths_excel():
 	        sound_data.append(thisdict)
 	        j = j + 1
 
-	# print(sound_data)
+	print(sound_data)
 
 	# For row 0 and column 0
 	# print(sheet.cell_value(0, 0))
@@ -207,8 +203,8 @@ def makebuttons():
                 'textobj': fontObj.render(str(n+1), False, black),
                 'textname': sound_data[n]['title'],
                 'filename': sound_data[n]['paths'],
-                'textcoords': (int(spacing_rows*(2*i+1.3)), int(spacing_columns*(2*j+1.3))),
-                'namecoords': (int(spacing_rows*(2*i+1)), int(spacing_columns*(2*j+2.2))),
+                'textcoords': (spacing_rows*(2*i+1.3), spacing_columns*(2*j+1.3)),
+                'namecoords': (spacing_rows*(2*i+1), spacing_columns*(2*j+2.2)),
                 'filecoords': (spacing_rows*(2*i+1), spacing_columns*(2*j+2.6)),
                 'color': grey,
                 'loop': False,
@@ -230,12 +226,12 @@ def makelogo(sound_data):
     # draw logo according to the size of the buttons
     # asset_url = resource_path(asset_folder_name + '/' + config_file_name)
     # with open(asset_url) as file_object:
-    # lines = file_object.read().splitlines()
+        # lines = file_object.read().splitlines()
     # banner = lines[0]
-    banner = sound_data[0]['banner']
+	banner = sound_data[0]['banner']
     logo = fontLogo.render(banner, True, white)
     logoRect = logo.get_rect()
-    logoRect.midright = (int(text_spacing*(2*rows)), int(text_spacing/2))
+    logoRect.midright = (text_spacing*(2*rows), text_spacing/2)
     return (logo, logoRect)
 
 # def rotate_list(list):
@@ -304,9 +300,9 @@ while done == False:
                 if elem['rectobj'].collidepoint(pos):
                     pygame.mixer.stop()
                     if elem['index'] == rows*columns: #exit
-                        if exit_shuts_down:
-                        	subprocess.Popen(['shutdown','-h','now'])
                         exit()
+						if exit_shuts_down:
+							subprocess.Popen(['shutdown','-h','now'])
                     if elem['index'] == rows*columns-1: #reset
                         sound_data = readpaths2()
                         data = makebuttons()
